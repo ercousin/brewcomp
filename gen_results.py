@@ -8,13 +8,21 @@ import datetime
 import re
 import os.path
 from collections import defaultdict
+from string import capwords
 import csv
 import pprint
+#import random
+
 
 ################
 # GLOBALS
 ################
 current_year = datetime.datetime.now().year
+
+debug_file_suffix            = '_debug_results.txt'
+medal_engravings_file_suffix = '_medal_engravings.txt'
+results_html_suffix          = '_results.html'
+gift_cards_html_suffix       = '_gift_cards.html'
 
 
 ################
@@ -32,10 +40,16 @@ assert os.path.isfile(args.csv_file), 'ERROR: Unable to open {}'.format(args.csv
 ################
 # Dependent GLOBALS
 ################
+csv_name   = os.path.splitext(os.path.basename(args.csv_file))[0]
+output_dir = os.path.dirname(args.csv_file)
+if (output_dir):
+    output_dir += '/'
+
 # Output File Names
-debug_file = str(args.year) + "_debug_results.txt"
-medal_engravings_file = str(args.year) + "_medal_engravings.txt"
-results_html = str(args.year) + "_results.html"
+debug_file            = str(output_dir) + str(csv_name) + debug_file_suffix
+medal_engravings_file = str(output_dir) + str(csv_name) + medal_engravings_file_suffix
+results_html          = str(output_dir) + str(csv_name) + results_html_suffix
+gift_cards_html       = str(output_dir) + str(csv_name) + gift_cards_html_suffix
 
 
 ################
@@ -53,15 +67,20 @@ def main():
     with open(results_html,'w', encoding='utf-8') as results_fh:
         results_fh.write(results_html_s)
 
+    gift_cards_html_s = gen_html_gift_cards(results)
+    with open(gift_cards_html,'w', encoding='utf-8') as gift_cards_fh:
+        gift_cards_fh.write(gift_cards_html_s)
+
 
 ################
 # Generate Results Data Structure
 ################
+
 def gen_results_by_table(csv_file):
     results_by_table = {
-                       'BOS': {
-                              'Places': defaultdict(dict),
-                       },
+            'BOS': {
+                'Places': defaultdict(dict),
+            },
     }
 
     def process_csv_line(line):
@@ -77,11 +96,13 @@ def gen_results_by_table(csv_file):
             brewer = line['Brewer First Name'] + ' ' + line['Brewer Last Name']
             style  = line['Category'] + line['Sub Category'] + ': ' + line['Style']
             return {
-                   'Brewer'    : brewer,
-                   'Co-Brewer' : line['Co Brewer'],
-                   'Entry Name': line['Entry Name'],
-                   'Style'     : style,
-                   'Club'      : line['Club'],
+                    'Brewer'    : brewer,
+                    'Co-Brewer' : line['Co Brewer'],
+                    'Entry Name': line['Entry Name'],
+                    'Style'     : style,
+                    'Club'      : line['Club'],
+                    'City'      : line['City'],
+                    'Email'     : line['Email Address'],
             }
 
         if (not int(line['Score']) > 0):
@@ -90,8 +111,8 @@ def gen_results_by_table(csv_file):
         table = get_table(line)
         if (not table in results_by_table):
             results_by_table[table] = {
-                                      'Entries Judged': 0,
-                                      'Places'        : defaultdict(dict),
+                    'Entries Judged': 0,
+                    'Places'        : defaultdict(dict),
             }
 
         results_by_table[table]['Entries Judged'] += 1
@@ -104,7 +125,7 @@ def gen_results_by_table(csv_file):
         if (bos_place):
             results_by_table['BOS']['Places'][bos_place] = get_entry_info(line)
 
-    with open(args.csv_file,'r', encoding='utf-8-sig') as csv_fh:
+    with open(csv_file,'r', encoding='utf-8-sig') as csv_fh:
         for line in csv.DictReader(csv_fh):
             process_csv_line(line)
 
@@ -131,14 +152,15 @@ def gen_results_by_table(csv_file):
 ################
 # Medal Engravings
 ################
+# Medal Places
+def medals_place(place):
+    return {
+            '1' : '1st Place',
+            '2' : '2nd Place',
+            '3' : '3rd Place',
+    }[place]
+
 def gen_medal_engravings(results):
-    # Medal Places
-    def medals_place(place):
-        return {
-               '1' : '1st Place',
-               '2' : '2nd Place',
-               '3' : '3rd Place',
-        }[place]
 
     engravings_s = ''
     for table in results.keys():
@@ -166,10 +188,10 @@ def gen_html_results(results):
     # Result Places
     def results_place(place):
         return {
-               '1' : '1st',
-               '2' : '2nd',
-               '3' : '3rd',
-               'HM': 'HM',
+                '1' : '1st',
+                '2' : '2nd',
+                '3' : '3rd',
+                'HM': 'HM',
         }[place]
 
     # HTML String
@@ -210,6 +232,132 @@ def gen_html_results(results):
         html_s += '</figure>\n\n'
     return html_s
 
+
+################
+# Gift Cards
+################
+def gen_html_gift_cards(results):
+    # Gift Card Vendors
+    gift_card_vendors = ['TB','THBA']
+
+    # Gift Card Amounts - FIXME
+    def gift_card_value(place):
+        return {
+                '1' : 15,
+                '2' : 10,
+                '3' : 5,
+        }.get(place, 0)
+
+    # Gift Card Overrides by Name - FIXME
+    def gift_card_by_name(name):
+        return {
+                'Mark Hubbard'       : 'TB',
+                'Chris Hughes'       : 'TB',
+                'Gene Iantorno'      : 'TB',
+                'James Kennedy'      : 'TB',
+                'Alissandre Terriah' : 'THBA',
+                'Michelle Bondy'     : 'THBA',
+                'David Chang-Sang'   : 'THBA',
+                'Marcelo Paniza'     : 'THBA',
+        }.get(name, 'default')
+
+    # Gift Card Assignment by City - FIXME
+    def gift_card_by_city(city):
+        city = capwords(city.lower())
+        cities = {
+                'THBA' : ['Pickering', 'Uxbridge', 'Orleans', ],
+                'TB'   : ['Etobicoke', 'Mississauga', 'Font Hill', 'Bolton', 'Alliston', 'Innisfil', 'York', \
+                    'Hamilton', 'Barrie', 'Milton', 'Meaford', 'Maple', 'Parry Sound'],
+        }
+        for vendor in cities.keys():
+            if (city in cities[vendor]):
+                return vendor
+
+        # Not Found - Assign to smallest group
+        smallest_group = list(gift_cards.keys())[0]
+        for vendor in gift_cards.keys():
+            if (len(gift_cards[vendor].keys()) < len(gift_cards[smallest_group].keys())):
+                smallest_group = vendor
+            
+        return smallest_group
+
+    gift_cards = {}
+    for vendor in gift_card_vendors:
+        gift_cards[vendor] = {}
+
+    #print('DEBUG (gen_html_gift_cards): gift_cards = ' + str(gift_cards) + '\n')
+    for table in results.keys():
+        if (table == 'BOS'):
+            continue  # No gift_card support for BOS
+        
+        for place_k in results[table]['Places']:
+            if (place_k == 'HM'):
+                continue  # No gift_card for HM
+
+            place_d = results[table]['Places'][place_k]
+
+            brewer = place_d['Brewer']
+            city   = place_d['City']
+            
+            vendor = gift_card_by_name(brewer) if (gift_card_by_name(brewer) != 'default') else gift_card_by_city(city)
+
+            value = gift_card_value(place_k)
+
+            #print('DEBUG (gen_html_gift_cards): brewer = ' + brewer + ', city = ' + city + ', gift_cards = ' + str(gift_cards) + '\n')
+            if (brewer in gift_cards[vendor]):
+                gift_cards[vendor][brewer]['Amount'] += value
+                gift_cards[vendor][brewer]['Places'].append(place_k)
+            else:
+                gift_cards[vendor][brewer] = {
+                        'Amount' : value,
+                        'City'   : city,
+                        'Email'  : place_d['Email'],
+                        'Places'  : [place_k],
+                }
+
+    # HTML String
+    html_s = ''
+    for vendor in gift_cards.keys():
+        html_s += '<h2>' + vendor + ':</h2>\n'
+        html_s += '<table>\n'
+        html_s += '  <thead>\n'
+        html_s += '    <tr>\n'
+        html_s += '      <th><b>Brewer</b></th>\n'
+        html_s += '      <th><b>Email</b></th>\n'
+        html_s += '      <th><b>City</b></th>\n'
+        html_s += '      <th><b>Gift Card Amount</b></th>\n'
+        html_s += '    </tr>\n'
+        html_s += '  </thead>\n'
+        html_s += '  <tbody>\n'
+        totals = {
+                'Amount'     : 0,
+                '1st Place' : 0,
+                '2nd Place' : 0,
+                '3rd Place' : 0,
+        }
+        for brewer_k in sorted(gift_cards[vendor]):
+            brewer_d = gift_cards[vendor][brewer_k]
+            html_s += '    <tr>\n'
+            html_s += '      <td>' + brewer_k + '</td>\n'
+            html_s += '      <td>' + brewer_d['Email'] + '</td>\n'
+            html_s += '      <td>' + brewer_d['City'] + '</td>\n'
+            html_s += '      <td>' + '$' + str(brewer_d['Amount']) + '</td>\n'
+            totals['Amount'] += brewer_d['Amount']
+            for place in brewer_d['Places']:
+              place_s = medals_place(place)
+              totals[place_s] += 1
+
+            html_s += '    </tr>\n'
+            
+        html_s += '  </tbody>\n'
+        html_s += '</table>\n'
+        html_s += '<p>\n'
+        html_s += 'Total Amount: $' + str(totals['Amount']) + '<br>\n'
+        html_s += 'Total Places: 1st = ' + str(totals['1st Place']) + ', 2nd = ' + str(totals['2nd Place']) + \
+                ', 3rd = ' + str(totals['3rd Place']) + '\n'
+        html_s += '</p>\n'
+
+    return html_s
 
 ################
 # Run MAIN()
