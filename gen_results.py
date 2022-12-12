@@ -123,6 +123,7 @@ def gen_results_by_table(csv_file):
 
         bos_place = line['Best of Show Place']
         if (bos_place):
+            bos_place  = 'HM' if (bos_place == '5') else bos_place
             results_by_table['BOS']['Places'][bos_place] = get_entry_info(line)
 
     with open(csv_file,'r', encoding='utf-8-sig') as csv_fh:
