@@ -105,7 +105,7 @@ def gen_results_by_table(csv_file):
                     'Email'     : line['Email Address'],
             }
 
-        if (not int(line['Score']) > 0):
+        if (not float(line['Score']) > 0):
             return
 
         table = get_table(line)
@@ -142,9 +142,11 @@ def gen_results_by_table(csv_file):
     
     # Print to Debug File
     if args.debug:
-        with open(debug_file,'w', encoding='utf-8') as debug_fh:
+#        with open(debug_file,'wb', encoding='utf-8') as debug_fh:
+        with open(debug_file,'wb') as debug_fh:
             results_s = pprint.pformat(results_by_table, width=250, compact=False, sort_dicts=False)
             debug_fh.write( results_s.encode('utf-8') )
+#            debug_fh.write( results_s )
 
     return results_by_table
 
@@ -238,7 +240,8 @@ def gen_html_results(results):
 ################
 def gen_html_gift_cards(results):
     # Gift Card Vendors
-    gift_card_vendors = ['TB','THBA']
+# From 2021:    gift_card_vendors = ['TB','THBA']
+    gift_card_vendors = ['TB']
 
     # Gift Card Amounts - FIXME
     def gift_card_value(place):
@@ -251,23 +254,25 @@ def gen_html_gift_cards(results):
     # Gift Card Overrides by Name - FIXME
     def gift_card_by_name(name):
         return {
-                'Mark Hubbard'       : 'TB',
-                'Chris Hughes'       : 'TB',
-                'Gene Iantorno'      : 'TB',
-                'James Kennedy'      : 'TB',
-                'Alissandre Terriah' : 'THBA',
-                'Michelle Bondy'     : 'THBA',
-                'David Chang-Sang'   : 'THBA',
-                'Marcelo Paniza'     : 'THBA',
+# From 2021:                'Mark Hubbard'       : 'TB',
+# From 2021:                'Chris Hughes'       : 'TB',
+# From 2021:                'Gene Iantorno'      : 'TB',
+# From 2021:                'James Kennedy'      : 'TB',
+# From 2021:                'Alissandre Terriah' : 'THBA',
+# From 2021:                'Michelle Bondy'     : 'THBA',
+# From 2021:                'David Chang-Sang'   : 'THBA',
+# From 2021:                'Marcelo Paniza'     : 'THBA',
+# 2022: No overrides needed
         }.get(name, 'default')
 
     # Gift Card Assignment by City - FIXME
     def gift_card_by_city(city):
         city = capwords(city.lower())
         cities = {
-                'THBA' : ['Pickering', 'Uxbridge', 'Orleans', ],
-                'TB'   : ['Etobicoke', 'Mississauga', 'Font Hill', 'Bolton', 'Alliston', 'Innisfil', 'York', \
-                    'Hamilton', 'Barrie', 'Milton', 'Meaford', 'Maple', 'Parry Sound'],
+# From 2021:                'THBA' : ['Pickering', 'Uxbridge', 'Orleans', ],
+# From 2021:                'TB'   : ['Etobicoke', 'Mississauga', 'Font Hill', 'Bolton', 'Alliston', 'Innisfil', 'York', \
+# From 2021:                    'Hamilton', 'Barrie', 'Milton', 'Meaford', 'Maple', 'Parry Sound'],
+# 2022: No overrides needed
         }
         for vendor in cities.keys():
             if (city in cities[vendor]):
