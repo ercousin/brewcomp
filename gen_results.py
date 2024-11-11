@@ -245,11 +245,12 @@ def gen_html_gift_cards(results):
     gift_card_vendors = ['TB']
 
     # Gift Card Amounts - FIXME
+    # Brew Slam 2024 - Fixed the TB gift cards to Silver / Bronze
     def gift_card_value(place):
         return {
-                '1' : 15,
-                '2' : 10,
-                '3' : 5,
+                '1' : 0,
+                '2' : 15,
+                '3' : 10,
         }.get(place, 0)
 
     # Gift Card Overrides by Name - FIXME
