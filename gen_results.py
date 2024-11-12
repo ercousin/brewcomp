@@ -56,7 +56,6 @@ gift_cards_html       = str(output_dir) + str(csv_name) + gift_cards_html_suffix
 # MAIN()
 ################
 def main():
-
     results = gen_results_by_table(args.csv_file)
 
     engravings = gen_medal_engravings(results)
@@ -86,7 +85,8 @@ def gen_results_by_table(csv_file):
     def process_csv_line(line):
 #        print('DEBUG (process_csv_line): line = ' + str(line))
         def get_table(line):
-            m = re.search(r'^([\d]+): ([\w/&;| ]+)$',line['Table'])
+#            print('DEBUG (get_table): Table = ' + str(line['Table']))
+            m = re.search(r'^([\d]+): ([\w/&;| -]+)$',str(line['Table']))
             table_num = re.sub(r'^0+','',m.group(1))
             table_name= re.sub(r'&amp;','&',m.group(2))
             table = table_num + ' - ' + table_name
@@ -105,7 +105,7 @@ def gen_results_by_table(csv_file):
                     'Email'     : line['Email Address'],
             }
 
-        if (not float(line['Score']) > 0):
+        if not (line['Received'] == '1' and float(line['Score']) > 0):
             return
 
         table = get_table(line)
@@ -131,7 +131,7 @@ def gen_results_by_table(csv_file):
             process_csv_line(line)
 
     for table in results_by_table.keys():
-#        print('DEBUG (sort_places): ' + str(results_by_table[table]['Places']))
+ #       print('DEBUG (sort_places): ' + str(results_by_table[table]['Places']))
         results_by_table[table]['Places'] = dict(sorted(results_by_table[table]['Places'].items()))
 
     def tables_sorting(item):
@@ -164,7 +164,6 @@ def medals_place(place):
     }[place]
 
 def gen_medal_engravings(results):
-
     engravings_s = ''
     for table in results.keys():
         engravings_s += '*' + table + ':*\n\n'
@@ -248,7 +247,7 @@ def gen_html_gift_cards(results):
     # Brew Slam 2024 - Fixed the TB gift cards to Silver / Bronze
     def gift_card_value(place):
         return {
-                '1' : 0,
+                #'1' : 0,
                 '2' : 15,
                 '3' : 10,
         }.get(place, 0)
@@ -309,6 +308,9 @@ def gen_html_gift_cards(results):
             vendor = gift_card_by_name(brewer) if (gift_card_by_name(brewer) != 'default') else gift_card_by_city(city)
 
             value = gift_card_value(place_k)
+
+            if not (int(value) > 0):
+                continue
 
             #print('DEBUG (gen_html_gift_cards): brewer = ' + brewer + ', city = ' + city + ', gift_cards = ' + str(gift_cards) + '\n')
             if (brewer in gift_cards[vendor]):
